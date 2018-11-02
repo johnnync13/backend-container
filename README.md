@@ -5,14 +5,6 @@ to help disseminate machine learning education and research. It’s a Jupyter
 notebook environment that requires no setup to use. For more information, see
 our [FAQ](https://research.google.com/colaboratory/faq.html).
 
-This repository contains the source for the container we run in our VMs, as well
-as the code we use for building it (via Docker
-and
-[Google Cloud Build](https://cloud.google.com/cloud-build/)).
-This repository is based on
-the
-[Google Cloud Datalab backend container](https://github.com/googledatalab/datalab).
-
 ## Contacting Us
 
 For support or help using Colab, please submit questions tagged with
