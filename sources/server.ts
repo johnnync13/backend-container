@@ -78,17 +78,11 @@ function handleRequest(request: http.ServerRequest,
   startInitializationForUser(request);
 
   // Requests proxied to Jupyter
-  // TODO(b/109975537): Remove unused paths.
-  if ((requestPath === '/') ||
-      (requestPath.indexOf('/api') === 0) ||
-      (requestPath.indexOf('/tree') === 0) ||
-      (requestPath.indexOf('/notebooks') === 0) ||
-      (requestPath.indexOf('/nbconvert') === 0) ||
+  // TODO(b/109975537): Forward paths directly from the TBE -> Jupyter and drop
+  // here.
+  if ((requestPath.indexOf('/api') === 0) ||
       (requestPath.indexOf('/nbextensions') === 0) ||
       (requestPath.indexOf('/files') === 0) ||
-      (requestPath.indexOf('/edit') === 0) ||
-      (requestPath.indexOf('/terminals') === 0) ||
-      (requestPath.indexOf('/sessions') === 0) ||
       (requestPath.indexOf('/static') === 0)) {
 
     handleJupyterRequest(request, response);
