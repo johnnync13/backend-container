@@ -15,9 +15,9 @@
 import * as bunyan from 'bunyan';
 import * as http from 'http';
 
-var logger: bunyan.ILogger = null;
-var requestLogger: bunyan.ILogger = null;
-var jupyterLogger: bunyan.ILogger = null;
+let logger: bunyan.ILogger = null;
+let requestLogger: bunyan.ILogger = null;
+let jupyterLogger: bunyan.ILogger = null;
 
 /**
  * Gets the logger for generating debug logs.
@@ -34,7 +34,7 @@ export function getLogger(): bunyan.ILogger {
  */
 export function logRequest(request: http.ServerRequest, response: http.ServerResponse): void {
   requestLogger.info({ url: request.url, method: request.method }, 'Received a new request');
-  response.on('finish', function() {
+  response.on('finish', () => {
     requestLogger.info({ url: request.url, method: request.method, status: response.statusCode });
   });
 }

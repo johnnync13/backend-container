@@ -13,7 +13,6 @@
  */
 
 import * as childProcess from 'child_process';
-import * as fs from 'fs';
 import * as http from 'http';
 import * as httpProxy from 'http-proxy';
 import * as net from 'net';
@@ -27,7 +26,6 @@ import * as util from './util';
 
 interface JupyterServer {
   port: number;
-  notebooks: string;
   childProcess?: childProcess.ChildProcess;
   proxy?: httpProxy.ProxyServer;
 }
@@ -35,13 +33,13 @@ interface JupyterServer {
 /**
  * Jupyter servers key'd by user id (each server is associated with a single user)
  */
-var jupyterServer: JupyterServer = null;
+let jupyterServer: JupyterServer = null;
 
 /**
  * Used to make sure no multiple initialization runs happen for the same user
  * at same time.
  */
-var callbackManager: callbacks.CallbackManager = new callbacks.CallbackManager();
+const callbackManager = new callbacks.CallbackManager();
 
 /**
  * The application settings instance.
@@ -59,14 +57,11 @@ function pipeOutput(stream: NodeJS.ReadableStream, port: number, error: boolean)
     if (data.indexOf('Polling kernel') < 0) {
       logging.logJupyterOutput('[' + port + ']: ' + data, error);
     }
-  })
+  });
 }
 
-function createJupyterServerAtPort(port: number, userDir: string) {
-  var server: JupyterServer = {
-    port: port,
-    notebooks: userDir,
-  };
+function createJupyterServerAtPort(port: number) {
+  const server: JupyterServer = {port};
 
   function exitHandler(code: number, signal: string): void {
     logging.getLogger().error('Jupyter process %d exited due to signal: %s',
@@ -74,10 +69,13 @@ function createJupyterServerAtPort(port: number, userDir: string) {
     jupyterServer = null;
   }
 
-  var processArgs = appSettings.jupyterArgs.slice().concat([
+  // We don't store notebooks on the colabx VM, but jupyter uses this as the
+  // default directory for kernels as well; cf:
+  // https://jupyter-notebook.readthedocs.io/en/stable/config.html
+  const processArgs = appSettings.jupyterArgs.slice().concat([
     '--port=' + server.port,
     '--port-retries=0',
-    '--notebook-dir="' + server.notebooks + '"',
+    '--notebook-dir="' + settings.getContentDir() + '"',
     '--NotebookApp.base_url="/"',
   ]);
 
@@ -93,8 +91,8 @@ function createJupyterServerAtPort(port: number, userDir: string) {
   logging.getLogger().info(
       'Using jupyter server address %s', jupyterServerAddr);
 
-  var notebookEnv: any = process.env;
-  var processOptions = {
+  const notebookEnv = process.env;
+  const processOptions = {
     detached: false,
     env: notebookEnv
   };
@@ -128,12 +126,12 @@ function createJupyterServerAtPort(port: number, userDir: string) {
 
   tcp.waitUntilUsedOnHost(server.port, jupyterServerAddr, 100, 15000)
       .then(
-          function() {
+          () => {
             jupyterServer = server;
             logging.getLogger().info('Jupyter server started.');
             callbackManager.invokeAllCallbacks(null);
           },
-          function(e) {
+          (e) => {
             logging.getLogger().error(e, 'Failed to start Jupyter server.');
             callbackManager.invokeAllCallbacks(e);
           });
@@ -144,32 +142,18 @@ function createJupyterServerAtPort(port: number, userDir: string) {
  * routing HTTP and WebSocket requests to Jupyter.
  */
 function createJupyterServer() {
-  logging.getLogger().info('Checking content dir exists');
-  var contentDir = settings.getContentDir();
-  logging.getLogger().info('Checking dir %s exists', contentDir);
-  if (!fs.existsSync(contentDir)) {
-    logging.getLogger().info('Creating content dir %s', contentDir);
-    try {
-      fs.mkdirSync(contentDir, parseInt('0755', 8));
-    } catch (e) {
-      // This likely means the disk is not yet ready.
-      // We'll fall back to /content for now.
-      logging.getLogger().info('Content dir %s does not exist', contentDir);
-      contentDir = '/content'
-    }
-  }
-
-  var port = appSettings.nextJupyterPort || 9000;
+  const port = appSettings.nextJupyterPort || 9000;
 
   logging.getLogger().info('Launching Jupyter server at %d', port);
   try {
-    createJupyterServerAtPort(port, contentDir);
+    createJupyterServerAtPort(port);
   } catch (e) {
     logging.getLogger().error(e, 'Error creating the Jupyter process');
     callbackManager.invokeAllCallbacks(e);
   }
 }
 
+/** Return the port where Jupyter is serving traffic. */
 export function getPort(request: http.ServerRequest): number {
   return jupyterServer ? jupyterServer.port : 0;
 }
@@ -179,7 +163,7 @@ export function getPort(request: http.ServerRequest): number {
  */
 export function start(cb: (e: Error) => void) {
   if (jupyterServer) {
-    process.nextTick(function() { cb(null); });
+    process.nextTick(() => { cb(null); });
     return;
   }
 
@@ -210,18 +194,17 @@ export function init(settings: AppSettings): void {
  * Closes the Jupyter server manager.
  */
 export function close(): void {
-  var jupyterProcess = jupyterServer.childProcess;
+  const jupyterProcess = jupyterServer.childProcess;
 
   try {
     jupyterProcess.kill('SIGHUP');
-  }
-  catch (e) {
+  } catch (e) {
   }
 
   jupyterServer = null;
 }
 
-
+/** Proxy this socket request to jupyter. */
 export function handleSocket(request: http.ServerRequest, socket: net.Socket, head: Buffer) {
   if (!jupyterServer) {
     // should never be here.
@@ -231,6 +214,7 @@ export function handleSocket(request: http.ServerRequest, socket: net.Socket, he
   jupyterServer.proxy.ws(request, socket, head);
 }
 
+/** Proxy this HTTP request to jupyter. */
 export function handleRequest(request: http.ServerRequest, response: http.ServerResponse) {
   if (!jupyterServer) {
     // should never be here.
@@ -245,9 +229,9 @@ export function handleRequest(request: http.ServerRequest, response: http.Server
 
 function responseHandler(proxyResponse: http.ClientResponse,
                          request: http.ServerRequest, response: http.ServerResponse) {
-    var origin: string = util.headerAsString(request.headers.origin);
+  const origin: string = util.headerAsString(request.headers.origin);
   if (appSettings.allowOriginOverrides.length &&
-      appSettings.allowOriginOverrides.indexOf(origin) != -1) {
+      appSettings.allowOriginOverrides.indexOf(origin) !== -1) {
     proxyResponse.headers['access-control-allow-origin'] = origin;
     proxyResponse.headers['access-control-allow-credentials'] = 'true';
   } else if (proxyResponse.headers['access-control-allow-origin'] !== undefined) {
@@ -257,13 +241,13 @@ function responseHandler(proxyResponse: http.ClientResponse,
     delete proxyResponse.headers['access-control-allow-origin'];
   }
 
-  if (proxyResponse.statusCode != 200) {
+  if (proxyResponse.statusCode !== 200) {
     return;
   }
 }
 
 function errorHandler(error: Error, request: http.ServerRequest, response: http.ServerResponse) {
-  logging.getLogger().error(error, 'Jupyter server returned error.')
+  logging.getLogger().error(error, 'Jupyter server returned error.');
 
   response.writeHead(500, 'Internal Server Error');
   response.end();

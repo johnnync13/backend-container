@@ -37,7 +37,7 @@ function exit() {
 /**
  * Handle uncaught exceptions to log them.
  */
-function errorHandler(e: any): void {
+function errorHandler(e: Error): void {
   console.error(e.stack);
 
   logging.getLogger().error(e, 'Unhandled exception');
