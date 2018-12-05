@@ -13,6 +13,7 @@
  */
 
 
+/** Configuration values shared across the whole app. */
 export declare interface AppSettings {
   /**
    * The port that the server should listen to.
@@ -20,7 +21,7 @@ export declare interface AppSettings {
   serverPort: number;
 
   /**
-   * The list of static arguments to be used when launching jupyter.
+   * The list of static arguments to be used when launching `jupyter notebook`.
    */
   jupyterArgs: string[];
 
