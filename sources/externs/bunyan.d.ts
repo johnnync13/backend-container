@@ -24,7 +24,7 @@ declare module 'bunyan' {
   }
 
   export interface ILogger {
-    child(childInfo: Map<string>): ILogger;
+    child(childInfo: {}): ILogger;
 
     debug(message: string): void;
     debug(format: string, ...objects: Object []): void;

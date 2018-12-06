@@ -14,6 +14,9 @@
 
 import * as bunyan from 'bunyan';
 import * as http from 'http';
+import * as path from 'path';
+
+import {AppSettings} from './appSettings';
 
 let logger: bunyan.ILogger = null;
 let requestLogger: bunyan.ILogger = null;
@@ -53,10 +56,31 @@ export function logJupyterOutput(text: string, error: boolean): void {
 /**
  * Initializes loggers used within the application.
  */
-export function initializeLoggers(): void {
-  logger = bunyan.createLogger({ name: 'app', streams: [
-      { level: 'debug', type: 'stream', stream: process.stderr },
-  ]});
-  requestLogger = logger.child({ type: 'request' });
-  jupyterLogger = logger.child({ type: 'jupyter' });
+export function initializeLoggers(settings: AppSettings): void {
+  // We configure our loggers as follows:
+  //  * our base logger tags all log records with `"name":"app"`, and sends logs
+  //    to stderr (including logs of all children)
+  //  * one child logger adds `"type":"request"`, and records method/URL for all
+  //    HTTP requests to the app, and method/URL/response code for all responses
+  //  * one child logger adds `"type":"jupyter"`, and records all messages from
+  //    the jupyter notebook server. These logs are also sent to a file on disk
+  //    (to assist user debugging).
+  //
+  // For more about bunyan, see:
+  //   https://github.com/trentm/node-bunyan/tree/f21007d46c0e64072617380b70d3f542368318a8
+  const jupyterLogPath =
+      path.join(settings.datalabRoot, '/var/log/colab-jupyter.log');
+  logger = bunyan.createLogger({
+    name: 'app',
+    streams: [
+      {level: 'debug', type: 'stream', stream: process.stderr},
+    ]
+  });
+  requestLogger = logger.child({type: 'request'});
+  // TODO(b/33253129): Enable disk logging unconditionally.
+  const jupyterStreams = settings.jupyterDiskLogs ?
+      [{level: 'info', type: 'rotating-file', path: jupyterLogPath}] :
+      [];
+  // TODO(b/33253129): Switch the logging level here to INFO.
+  jupyterLogger = logger.child({type: 'jupyter', streams: jupyterStreams});
 }

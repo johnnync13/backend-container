@@ -68,4 +68,11 @@ export declare interface AppSettings {
    * An empty value uses localhost.
    */
   kernelManagerProxyHost: string;
+
+  /**
+   * If true, also tee jupyter logs to disk.
+   *
+   * TODO(b/33253129): Remove this flag.
+   */
+  jupyterDiskLogs: boolean;
 }

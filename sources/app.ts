@@ -21,7 +21,7 @@ import * as settings from './settings';
  */
 const appSettings = settings.loadAppSettings();
 if (appSettings != null) {
-  logging.initializeLoggers();
+  logging.initializeLoggers(appSettings);
   server.run(appSettings);
 }
 
