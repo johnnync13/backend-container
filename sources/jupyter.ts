@@ -80,7 +80,8 @@ function createJupyterServerAtPort(port: number) {
   // https://jupyter-notebook.readthedocs.io/en/stable/config.html
   const processArgs = args.concat([
     '--port=' + server.port,
-    `--notebook-dir="${settings.getContentDir()}"`,
+    `--FileContentsManager.root_dir="${appSettings.datalabRoot}/"`,
+    `--MappingKernelManager.root_dir="${settings.getContentDir()}"`,
   ]);
 
   let jupyterServerAddr = 'localhost';

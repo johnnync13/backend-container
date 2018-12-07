@@ -42,7 +42,7 @@ export declare interface AppSettings {
   socketioPort: number;
 
   /**
-   * Local directory which stores notebooks in the container
+   * Local directory where kernels are started.
    */
   contentDir: string;
 

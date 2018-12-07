@@ -55,7 +55,7 @@ export function loadAppSettings(): AppSettings {
 }
 
 /**
- * Get the base directory for local content.
+ * Get the base directory for starting kernels.
  */
 export function getContentDir(): string {
   const appSettings = loadAppSettings();
