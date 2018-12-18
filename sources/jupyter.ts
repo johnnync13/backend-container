@@ -69,17 +69,8 @@ function createJupyterServerAtPort(port: number) {
     jupyterServer = null;
   }
 
-  let args = appSettings.jupyterArgs.slice();
-  // TODO(b/109975537): Remove this check.
-  if (args.length === 0 || args[0] !== 'notebook') {
-    args = ['notebook'].concat(args);
-  }
-
-  // We don't store notebooks on the colabx VM, but jupyter uses `notebook-dir`
-  // as the default directory for kernels as well; cf:
-  // https://jupyter-notebook.readthedocs.io/en/stable/config.html
-  const processArgs = args.concat([
-    '--port=' + server.port,
+  const processArgs = ['notebook'].concat(appSettings.jupyterArgs).concat([
+    `--port=${server.port}`,
     `--FileContentsManager.root_dir="${appSettings.datalabRoot}/"`,
     `--MappingKernelManager.root_dir="${settings.getContentDir()}"`,
   ]);
