@@ -19,7 +19,6 @@ import * as net from 'net';
 import * as tcp from 'tcp-port-used';
 
 import {AppSettings} from './appSettings';
-import * as callbacks from './callbacks';
 import * as logging from './logging';
 import * as settings from './settings';
 import * as util from './util';
@@ -34,12 +33,6 @@ interface JupyterServer {
  * Jupyter servers key'd by user id (each server is associated with a single user)
  */
 let jupyterServer: JupyterServer = null;
-
-/**
- * Used to make sure no multiple initialization runs happen for the same user
- * at same time.
- */
-const callbackManager = new callbacks.CallbackManager();
 
 /**
  * The application settings instance.
@@ -60,8 +53,9 @@ function pipeOutput(stream: NodeJS.ReadableStream, port: number, error: boolean)
   });
 }
 
-function createJupyterServerAtPort(port: number) {
-  const server: JupyterServer = {port};
+function createJupyterServer() {
+  const server: JupyterServer = {port: appSettings.nextJupyterPort};
+  logging.getLogger().info('Launching Jupyter server at %d', server.port);
 
   function exitHandler(code: number, signal: string): void {
     logging.getLogger().error('Jupyter process %d exited due to signal: %s',
@@ -125,58 +119,10 @@ function createJupyterServerAtPort(port: number) {
           () => {
             jupyterServer = server;
             logging.getLogger().info('Jupyter server started.');
-            callbackManager.invokeAllCallbacks(null);
           },
           (e) => {
             logging.getLogger().error(e, 'Failed to start Jupyter server.');
-            callbackManager.invokeAllCallbacks(e);
           });
-}
-
-/**
- * Starts the Jupyter server, and then creates a proxy object enabling
- * routing HTTP and WebSocket requests to Jupyter.
- */
-function createJupyterServer() {
-  const port = appSettings.nextJupyterPort || 9000;
-
-  logging.getLogger().info('Launching Jupyter server at %d', port);
-  try {
-    createJupyterServerAtPort(port);
-  } catch (e) {
-    logging.getLogger().error(e, 'Error creating the Jupyter process');
-    callbackManager.invokeAllCallbacks(e);
-  }
-}
-
-/** Return the port where Jupyter is serving traffic. */
-export function getPort(request: http.ServerRequest): number {
-  return jupyterServer ? jupyterServer.port : 0;
-}
-
-/**
- * Starts a jupyter server instance.
- */
-export function start(cb: (e: Error) => void) {
-  if (jupyterServer) {
-    process.nextTick(() => { cb(null); });
-    return;
-  }
-
-  if (!callbackManager.checkOngoingAndRegisterCallback(cb)) {
-    // There is already a start request ongoing. Return now to avoid multiple Jupyter
-    // processes for the same user.
-    return;
-  }
-
-  logging.getLogger().info('Starting jupyter server.');
-  try {
-    createJupyterServer();
-  }
-  catch (e) {
-    logging.getLogger().error(e, 'Failed to start Jupyter server.');
-    callbackManager.invokeAllCallbacks(e);
-  }
 }
 
 /**
@@ -184,6 +130,7 @@ export function start(cb: (e: Error) => void) {
  */
 export function init(settings: AppSettings): void {
   appSettings = settings;
+  createJupyterServer();
 }
 
 /**
@@ -203,8 +150,7 @@ export function close(): void {
 /** Proxy this socket request to jupyter. */
 export function handleSocket(request: http.ServerRequest, socket: net.Socket, head: Buffer) {
   if (!jupyterServer) {
-    // should never be here.
-    logging.getLogger().error('Jupyter server was not created yet.');
+    logging.getLogger().error('Jupyter server is not running.');
     return;
   }
   jupyterServer.proxy.ws(request, socket, head);
@@ -213,8 +159,6 @@ export function handleSocket(request: http.ServerRequest, socket: net.Socket, he
 /** Proxy this HTTP request to jupyter. */
 export function handleRequest(request: http.ServerRequest, response: http.ServerResponse) {
   if (!jupyterServer) {
-    // should never be here.
-    logging.getLogger().error('Jupyter server was not created yet.');
     response.statusCode = 500;
     response.end();
     return;

@@ -26,45 +26,6 @@ import * as wsHttpProxy from './wsHttpProxy';
 let server: http.Server;
 
 /**
- * If it is the user's first request since the web server restarts,
- * need to start jupyter server for that user.
- * We don't track results here. Later requests will go through initialization
- * checks again, and if it is still initializing, those requests will be parked
- * and wait for initialization to complete or fail.
- */
-function startInitializationForUser(request: http.ServerRequest): void {
-  if (jupyter.getPort(request) == 0) {
-    // Giving null callback so this is fire-and-forget.
-    jupyter.start(null);
-  }
-}
-
-/**
- * Check if workspace and jupyter server is initialized for the user.
- * If not, wait for initialization to be done and then proceed to pass
- * the request to jupyter server.
- */
-function handleJupyterRequest(request: http.ServerRequest, response: http.ServerResponse): void {
-
-  if (jupyter.getPort(request) == 0) {
-    // Jupyter server is not created yet. Creating it for user and call self again.
-    // Another 'start' may already be ongoing so this 'syncNow' will probably
-    // be parked until the ongoing one is done.
-    jupyter.start(function(e) {
-      if (e) {
-        response.statusCode = 500;
-        response.end();
-      }
-      else {
-        handleJupyterRequest(request, response);
-      }
-    });
-    return;
-  }
-  jupyter.handleRequest(request, response);
-}
-
-/**
  * Handles all requests.
  * @param request the incoming HTTP request.
  * @param response the out-going HTTP response.
@@ -74,9 +35,6 @@ function handleRequest(request: http.ServerRequest,
                        response: http.ServerResponse,
                        requestPath: string) {
 
-  // If Jupyter is not initialized, do it as early as possible after authentication.
-  startInitializationForUser(request);
-
   // Requests proxied to Jupyter
   // TODO(b/109975537): Forward paths directly from the TBE -> Jupyter and drop
   // here.
@@ -84,8 +42,7 @@ function handleRequest(request: http.ServerRequest,
       (requestPath.indexOf('/nbextensions') === 0) ||
       (requestPath.indexOf('/files') === 0) ||
       (requestPath.indexOf('/static') === 0)) {
-
-    handleJupyterRequest(request, response);
+    jupyter.handleRequest(request, response);
     return;
   }
 
@@ -121,7 +78,7 @@ function uncheckedRequestHandler(request: http.ServerRequest, response: http.Ser
 }
 
 // The path that is used for the optional websocket proxy for HTTP requests.
-const httpOverWebSocketPath: string = '/http_over_websocket';
+const httpOverWebSocketPath = '/http_over_websocket';
 
 function socketHandler(request: http.ServerRequest, socket: net.Socket, head: Buffer) {
   const parsedUrl = url.parse(request.url, true);
@@ -162,7 +119,9 @@ export function run(settings: AppSettings): void {
   sockets.init(server, settings);
 
   if (settings.allowHttpOverWebsocket) {
-    new wsHttpProxy.WsHttpProxy(server, httpOverWebSocketPath, settings.allowOriginOverrides);
+    // tslint:disable-next-line:no-unused-expression executed for side-effects
+    new wsHttpProxy.WsHttpProxy(
+        server, httpOverWebSocketPath, settings.allowOriginOverrides);
   }
 
   logging.getLogger().info('Starting server at http://localhost:%d',
