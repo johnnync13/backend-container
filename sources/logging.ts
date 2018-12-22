@@ -31,6 +31,14 @@ export function getLogger(): bunyan.ILogger {
 }
 
 /**
+ * Gets the logger for generating Jupyter logs.
+ * @returns the logger configured for Jupyter logging.
+ */
+export function getJupyterLogger(): bunyan.ILogger {
+  return jupyterLogger;
+}
+
+/**
  * Logs a request and the corresponding response.
  * @param request the request to be logged.
  * @param response the response to be logged.
@@ -40,17 +48,6 @@ export function logRequest(request: http.ServerRequest, response: http.ServerRes
   response.on('finish', () => {
     requestLogger.info({ url: request.url, method: request.method, status: response.statusCode });
   });
-}
-
-/**
- * Logs the output from Jupyter.
- * @param text the output text to log.
- * @param error whether the text is error text or not.
- */
-export function logJupyterOutput(text: string, error: boolean): void {
-  // All Jupyter output seems to be generated on stderr, so ignore the
-  // error parameter, and log as info...
-  jupyterLogger.info(text);
 }
 
 /**
@@ -81,6 +78,5 @@ export function initializeLoggers(settings: AppSettings): void {
   const jupyterStreams = settings.jupyterDiskLogs ?
       [{level: 'info', type: 'rotating-file', path: jupyterLogPath}] :
       [];
-  // TODO(b/33253129): Switch the logging level here to INFO.
   jupyterLogger = logger.child({type: 'jupyter', streams: jupyterStreams});
 }

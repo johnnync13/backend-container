@@ -12,13 +12,28 @@
  * the License.
  */
 
+/**
+ * Normalize a header value to a string, turning null to the empty string and
+ * joining multiple values as needed.
+ */
 export function headerAsString(header?: string | string[]): string {
     if (!header) {
         return '';
-    } else if (typeof header == 'string') {
-        return header;
+    } else if (typeof header === 'string') {
+      return header;
     } else {
-        return header.join();
-    };
+      return header.join();
+    }
 }
 
+// TODO(b/121389076): Drop this function and replace it with
+//   needles.some((needle) => haystack.startsWith(needle))
+/** Return true if haystack starts with any needle in needles. */
+export function startsWith(haystack: string, needles: string[]): boolean {
+  for (const needle of needles) {
+    if (haystack.indexOf(needle) === 0) {
+      return true;
+    }
+  }
+  return false;
+}

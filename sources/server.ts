@@ -21,6 +21,7 @@ import * as jupyter from './jupyter';
 import * as logging from './logging';
 import * as reverseProxy from './reverseProxy';
 import * as sockets from './sockets';
+import * as util from './util';
 import * as wsHttpProxy from './wsHttpProxy';
 
 let server: http.Server;
@@ -38,10 +39,8 @@ function handleRequest(request: http.ServerRequest,
   // Requests proxied to Jupyter
   // TODO(b/109975537): Forward paths directly from the TBE -> Jupyter and drop
   // here.
-  if ((requestPath.indexOf('/api') === 0) ||
-      (requestPath.indexOf('/nbextensions') === 0) ||
-      (requestPath.indexOf('/files') === 0) ||
-      (requestPath.indexOf('/static') === 0)) {
+  if (util.startsWith(
+          requestPath, ['/api', '/nbextensions', '/files', '/static'])) {
     jupyter.handleRequest(request, response);
     return;
   }

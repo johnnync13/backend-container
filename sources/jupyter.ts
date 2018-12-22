@@ -39,16 +39,49 @@ let jupyterServer: JupyterServer = null;
  */
 let appSettings: AppSettings;
 
-function pipeOutput(stream: NodeJS.ReadableStream, port: number, error: boolean) {
+/*
+ * This list of levels should match the ones used by Python:
+ *   https://docs.python.org/3/library/logging.html#logging-levels
+ */
+const enum LogLevels {
+  Critical = 'CRITICAL',
+  Error = 'ERROR',
+  Warning = 'WARNING',
+  Info = 'INFO',
+  Debug = 'DEBUG',
+  NotSet = 'NOTSET',
+}
+
+function pipeOutput(stream: NodeJS.ReadableStream) {
   stream.setEncoding('utf8');
 
+  // The format we parse here corresponds to the log format we set in our
+  // jupyter configuration.
+  const logger = logging.getJupyterLogger();
   stream.on('data', (data: string) => {
-    // Jupyter generates a polling kernel message once every 3 seconds
-    // per kernel! This adds too much noise into the log, so avoid
-    // logging it.
-
-    if (data.indexOf('Polling kernel') < 0) {
-      logging.logJupyterOutput('[' + port + ']: ' + data, error);
+    for (const line of data.split('\n')) {
+      if (line.trim().length === 0) {
+        continue;
+      }
+      const parts = line.split('|', 3);
+      if (parts.length !== 3) {
+        // Non-logging messages (eg tracebacks) get logged as warnings.
+        logger.warn(line);
+        continue;
+      }
+      const level = parts[1];
+      const message = parts[2];
+      // We need to map Python's log levels to those used by bunyan.
+      if (level === LogLevels.Critical || level === LogLevels.Error) {
+        logger.error(message);
+      } else if (level === LogLevels.Warning) {
+        logger.warn(message);
+      } else if (level === LogLevels.Info) {
+        logger.info(message);
+      } else {
+        // We map DEBUG, NOTSET, and any unknown log levels to debug.
+        logger.debug(message);
+      }
     }
   });
 }
@@ -93,8 +126,8 @@ function createJupyterServer() {
                            server.childProcess.pid, processArgs);
 
   // Capture the output, so it can be piped for logging.
-  pipeOutput(server.childProcess.stdout, server.port, /* error */ false);
-  pipeOutput(server.childProcess.stderr, server.port, /* error */ true);
+  pipeOutput(server.childProcess.stdout);
+  pipeOutput(server.childProcess.stderr);
 
   // Create the proxy.
   let proxyTargetHost = jupyterServerAddr;
