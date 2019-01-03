@@ -47,17 +47,6 @@ export declare interface AppSettings {
   contentDir: string;
 
   /**
-   * The value for the access-control-allow-origin header. This
-   * allows another frontend to connect to Datalab.
-   */
-  allowOriginOverrides: string[];
-
-  /**
-   * If true, allow HTTP requests via websockets.
-   */
-  allowHttpOverWebsocket: boolean;
-
-  /**
    * The port to use to proxy kernel manager websocket requests. A value of 0
    * disables proxying.
    */

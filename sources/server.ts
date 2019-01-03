@@ -22,7 +22,6 @@ import * as logging from './logging';
 import * as reverseProxy from './reverseProxy';
 import * as sockets from './sockets';
 import * as util from './util';
-import * as wsHttpProxy from './wsHttpProxy';
 
 let server: http.Server;
 
@@ -76,15 +75,8 @@ function uncheckedRequestHandler(request: http.ServerRequest, response: http.Ser
   }
 }
 
-// The path that is used for the optional websocket proxy for HTTP requests.
-const httpOverWebSocketPath = '/http_over_websocket';
-
 function socketHandler(request: http.ServerRequest, socket: net.Socket, head: Buffer) {
-  const parsedUrl = url.parse(request.url, true);
-  // Avoid proxying websocket requests on this path, as it's handled locally rather than by Jupyter.
-  if (parsedUrl.pathname !== httpOverWebSocketPath) {
-    jupyter.handleSocket(request, socket, head);
-  }
+  jupyter.handleSocket(request, socket, head);
 }
 
 /**
@@ -116,12 +108,6 @@ export function run(settings: AppSettings): void {
   server.on('upgrade', socketHandler);
 
   sockets.init(server, settings);
-
-  if (settings.allowHttpOverWebsocket) {
-    // tslint:disable-next-line:no-unused-expression executed for side-effects
-    new wsHttpProxy.WsHttpProxy(
-        server, httpOverWebSocketPath, settings.allowOriginOverrides);
-  }
 
   logging.getLogger().info('Starting server at http://localhost:%d',
                            settings.serverPort);

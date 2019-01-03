@@ -202,18 +202,12 @@ export function handleRequest(request: http.ServerRequest, response: http.Server
 
 function responseHandler(proxyResponse: http.ClientResponse,
                          request: http.ServerRequest, response: http.ServerResponse) {
-  const origin: string = util.headerAsString(request.headers.origin);
-  if (appSettings.allowOriginOverrides.length &&
-      appSettings.allowOriginOverrides.indexOf(origin) !== -1) {
-    proxyResponse.headers['access-control-allow-origin'] = origin;
-    proxyResponse.headers['access-control-allow-credentials'] = 'true';
-  } else if (proxyResponse.headers['access-control-allow-origin'] !== undefined) {
+  if (proxyResponse.headers['access-control-allow-origin'] !== undefined) {
     // Delete the allow-origin = * header that is sent (likely as a result of a workaround
     // notebook configuration to allow server-side websocket connections that are
     // interpreted by Jupyter as cross-domain).
     delete proxyResponse.headers['access-control-allow-origin'];
   }
-
   if (proxyResponse.statusCode !== 200) {
     return;
   }
