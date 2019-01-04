@@ -11,15 +11,52 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
+
+import * as fs from 'fs';
+import * as path from 'path';
+
+import {AppSettings} from './appSettings';
 import * as logging from './logging';
 import * as server from './server';
-import * as settings from './settings';
+
+/**
+ * Loads the configuration settings for the application to use.
+ * On first run, this generates any dynamic settings and merges them into the
+ * settings result.
+ * @returns the settings object for the application to use.
+ */
+function loadAppSettings(): AppSettings {
+  const settingsPath = path.join(__dirname, 'config', 'settings.json');
+
+  if (!fs.existsSync(settingsPath)) {
+    console.error('App settings file %s not found.', settingsPath);
+    return null;
+  }
+
+  try {
+    const settings =
+        JSON.parse(fs.readFileSync(settingsPath, 'utf8') || '{}') as
+        AppSettings;
+    const settingsOverrides = process.env['DATALAB_SETTINGS_OVERRIDES'];
+    if (settingsOverrides) {
+      // Allow overriding individual settings via JSON provided as an environment variable.
+      const overrides = JSON.parse(settingsOverrides);
+      for (const key of Object.keys(overrides)) {
+        (settings as any)[key] = overrides[key];
+      }
+    }
+    return settings;
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+}
 
 /**
  * Load the configuration settings, and then start the server, which
  * runs indefinitely, listening to and processing incoming HTTP requests.
  */
-const appSettings = settings.loadAppSettings();
+const appSettings = loadAppSettings();
 if (appSettings != null) {
   logging.initializeLoggers(appSettings);
   server.run(appSettings);

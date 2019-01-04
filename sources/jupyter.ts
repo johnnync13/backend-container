@@ -16,11 +16,11 @@ import * as childProcess from 'child_process';
 import * as http from 'http';
 import * as httpProxy from 'http-proxy';
 import * as net from 'net';
+import * as path from 'path';
 import * as tcp from 'tcp-port-used';
 
 import {AppSettings} from './appSettings';
 import * as logging from './logging';
-import * as settings from './settings';
 import * as util from './util';
 
 interface JupyterServer {
@@ -96,10 +96,11 @@ function createJupyterServer() {
     jupyterServer = null;
   }
 
+  const contentDir = path.join(appSettings.datalabRoot, appSettings.contentDir);
   const processArgs = ['notebook'].concat(appSettings.jupyterArgs).concat([
     `--port=${server.port}`,
     `--FileContentsManager.root_dir="${appSettings.datalabRoot}/"`,
-    `--MappingKernelManager.root_dir="${settings.getContentDir()}"`,
+    `--MappingKernelManager.root_dir="${contentDir}"`,
   ]);
 
   let jupyterServerAddr = 'localhost';
