@@ -74,9 +74,8 @@ export function initializeLoggers(settings: AppSettings): void {
     ]
   });
   requestLogger = logger.child({type: 'request'});
-  // TODO(b/33253129): Enable disk logging unconditionally.
-  const jupyterStreams = settings.jupyterDiskLogs ?
-      [{level: 'info', type: 'rotating-file', path: jupyterLogPath}] :
-      [];
-  jupyterLogger = logger.child({type: 'jupyter', streams: jupyterStreams});
+  jupyterLogger = logger.child({
+    type: 'jupyter',
+    streams: [{level: 'info', type: 'rotating-file', path: jupyterLogPath}]
+  });
 }
