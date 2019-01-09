@@ -18,6 +18,13 @@ import * as path from 'path';
 
 import {AppSettings} from './appSettings';
 
+// We import the bunyan-rotating-file-stream package, which exports a
+// constructor as a single object; we use lint disables here to make the usage
+// below look reasonable.
+//
+// tslint:disable-next-line:no-require-imports variable-name
+const RotatingFileStream = require('bunyan-rotating-file-stream');
+
 let logger: bunyan.ILogger = null;
 let requestLogger: bunyan.ILogger = null;
 let jupyterLogger: bunyan.ILogger = null;
@@ -76,6 +83,15 @@ export function initializeLoggers(settings: AppSettings): void {
   requestLogger = logger.child({type: 'request'});
   jupyterLogger = logger.child({
     type: 'jupyter',
-    streams: [{level: 'info', type: 'rotating-file', path: jupyterLogPath}]
+    streams: [{
+      level: 'info',
+      type: 'stream',
+      stream: new RotatingFileStream({
+        path: jupyterLogPath,
+        rotateExisting: false,
+        threshold: '2m',
+        totalSize: '20m'
+      }),
+    }]
   });
 }

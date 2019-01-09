@@ -3,6 +3,7 @@
   "description": "Google Cloud Datalab Server",
   "dependencies": {
     "bunyan": "^1.2.0",
+    "bunyan-rotating-file-stream": "^1.6.0",
     "http-proxy": "^1.4.3",
     "socket.io": "^2.1.1",
     "tcp-port-used": "^0.1.2",
