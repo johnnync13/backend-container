@@ -21,7 +21,6 @@ import * as tcp from 'tcp-port-used';
 
 import {AppSettings} from './appSettings';
 import * as logging from './logging';
-import * as util from './util';
 
 interface JupyterServer {
   port: number;
