@@ -6,7 +6,6 @@
     "bunyan-rotating-file-stream": "^1.6.0",
     "http-proxy": "^1.4.3",
     "socket.io": "^2.1.1",
-    "tcp-port-used": "^0.1.2",
     "ws": "1.1.4"
   },
   "engines": {

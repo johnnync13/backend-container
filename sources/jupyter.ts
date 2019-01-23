@@ -17,7 +17,6 @@ import * as http from 'http';
 import * as httpProxy from 'http-proxy';
 import * as net from 'net';
 import * as path from 'path';
-import * as tcp from 'tcp-port-used';
 
 import {AppSettings} from './appSettings';
 import * as logging from './logging';
@@ -147,15 +146,7 @@ function createJupyterServer() {
   server.proxy.on('proxyRes', responseHandler);
   server.proxy.on('error', errorHandler);
 
-  tcp.waitUntilUsedOnHost(server.port, jupyterServerAddr, 100, 15000)
-      .then(
-          () => {
-            jupyterServer = server;
-            logging.getLogger().info('Jupyter server started.');
-          },
-          (e) => {
-            logging.getLogger().error(e, 'Failed to start Jupyter server.');
-          });
+  jupyterServer = server;
 }
 
 /**
