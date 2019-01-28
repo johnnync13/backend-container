@@ -20,7 +20,6 @@ import {AppSettings} from './appSettings';
 import * as jupyter from './jupyter';
 import * as logging from './logging';
 import * as sockets from './sockets';
-import * as util from './util';
 
 let server: http.Server;
 
@@ -37,8 +36,10 @@ function handleRequest(request: http.ServerRequest,
   // Requests proxied to Jupyter
   // TODO(b/109975537): Forward paths directly from the TBE -> Jupyter and drop
   // here.
-  if (util.startsWith(
-          requestPath, ['/api', '/nbextensions', '/files', '/static'])) {
+  if ((requestPath.indexOf('/api') === 0) ||
+      (requestPath.indexOf('/nbextensions') === 0) ||
+      (requestPath.indexOf('/files') === 0) ||
+      (requestPath.indexOf('/static') === 0))  {
     jupyter.handleRequest(request, response);
     return;
   }
