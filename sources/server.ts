@@ -19,6 +19,7 @@ import * as url from 'url';
 import {AppSettings} from './appSettings';
 import * as jupyter from './jupyter';
 import * as logging from './logging';
+import * as reverseProxy from './reverseProxy';
 import * as sockets from './sockets';
 
 let server: http.Server;
@@ -65,8 +66,11 @@ function uncheckedRequestHandler(request: http.ServerRequest, response: http.Ser
 
   logging.logRequest(request, response);
 
+  const reverseProxyPort: string = reverseProxy.getRequestPort(request, urlpath);
   if (sockets.isSocketIoPath(urlpath)) {
     // Will automatically be handled by socket.io.
+  } else if (reverseProxyPort) {
+    reverseProxy.handleRequest(request, response, reverseProxyPort);
   } else {
     handleRequest(request, response, urlpath);
   }
@@ -96,6 +100,7 @@ function requestHandler(request: http.ServerRequest, response: http.ServerRespon
  */
 export function run(settings: AppSettings): void {
   jupyter.init(settings);
+  reverseProxy.init(settings);
 
   server = http.createServer(requestHandler);
   // Disable HTTP keep-alive connection timeouts in order to avoid connection
