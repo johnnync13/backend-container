@@ -143,7 +143,6 @@ function createJupyterServer() {
   };
 
   server.proxy = httpProxy.createProxyServer(proxyOptions);
-  server.proxy.on('proxyRes', responseHandler);
   server.proxy.on('error', errorHandler);
 
   jupyterServer = server;
@@ -189,19 +188,6 @@ export function handleRequest(request: http.ServerRequest, response: http.Server
   }
 
   jupyterServer.proxy.web(request, response, null);
-}
-
-function responseHandler(proxyResponse: http.ClientResponse,
-                         request: http.ServerRequest, response: http.ServerResponse) {
-  if (proxyResponse.headers['access-control-allow-origin'] !== undefined) {
-    // Delete the allow-origin = * header that is sent (likely as a result of a workaround
-    // notebook configuration to allow server-side websocket connections that are
-    // interpreted by Jupyter as cross-domain).
-    delete proxyResponse.headers['access-control-allow-origin'];
-  }
-  if (proxyResponse.statusCode !== 200) {
-    return;
-  }
 }
 
 function errorHandler(error: Error, request: http.ServerRequest, response: http.ServerResponse) {
