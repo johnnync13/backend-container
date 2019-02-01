@@ -61,8 +61,8 @@ function handleRequest(request: http.ServerRequest,
  * @param response the out-going HTTP response.
  */
 function uncheckedRequestHandler(request: http.ServerRequest, response: http.ServerResponse) {
-  const parsedUrl = url.parse(request.url, true);
-  const urlpath = parsedUrl.pathname;
+  const parsedUrl = url.parse(request.url || '', true);
+  const urlpath = parsedUrl.pathname || '';
 
   logging.logRequest(request, response);
 
@@ -90,7 +90,8 @@ function requestHandler(request: http.ServerRequest, response: http.ServerRespon
   try {
     uncheckedRequestHandler(request, response);
   } catch (e) {
-    logging.getLogger().error('Uncaught error handling a request to "%s": %s', request.url, e);
+    logging.getLogger().error(
+        `Uncaught error handling a request to "${request.url}": ${e}`);
   }
 }
 

@@ -25,7 +25,7 @@ interface Session {
   id: number;
   url: string;
   socket: SocketIO.Socket;
-  webSocket: WebSocket;
+  webSocket: WebSocket|null;
 }
 
 interface SessionMessage {

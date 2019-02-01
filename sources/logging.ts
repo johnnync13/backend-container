@@ -25,16 +25,16 @@ import {AppSettings} from './appSettings';
 // tslint:disable-next-line:no-require-imports variable-name
 const RotatingFileStream = require('bunyan-rotating-file-stream');
 
-let logger: bunyan.ILogger = null;
-let requestLogger: bunyan.ILogger = null;
-let jupyterLogger: bunyan.ILogger = null;
+let logger: bunyan.ILogger|null = null;
+let requestLogger: bunyan.ILogger|null = null;
+let jupyterLogger: bunyan.ILogger|null = null;
 
 /**
  * Gets the logger for generating debug logs.
  * @returns the logger configured for debugging logging.
  */
 export function getLogger(): bunyan.ILogger {
-  return logger;
+  return logger!;
 }
 
 /**
@@ -42,7 +42,7 @@ export function getLogger(): bunyan.ILogger {
  * @returns the logger configured for Jupyter logging.
  */
 export function getJupyterLogger(): bunyan.ILogger {
-  return jupyterLogger;
+  return jupyterLogger!;
 }
 
 /**
@@ -51,9 +51,14 @@ export function getJupyterLogger(): bunyan.ILogger {
  * @param response the response to be logged.
  */
 export function logRequest(request: http.ServerRequest, response: http.ServerResponse): void {
-  requestLogger.info({ url: request.url, method: request.method }, 'Received a new request');
+  requestLogger!.info(
+      {url: request.url, method: request.method}, 'Received a new request');
   response.on('finish', () => {
-    requestLogger.info({ url: request.url, method: request.method, status: response.statusCode });
+    requestLogger!.info({
+      url: request.url,
+      method: request.method,
+      status: response.statusCode
+    });
   });
 }
 

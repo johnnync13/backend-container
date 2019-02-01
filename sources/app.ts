@@ -29,8 +29,9 @@ function loadAppSettings(): AppSettings {
   const settingsPath = path.join(__dirname, 'config', 'settings.json');
 
   if (!fs.existsSync(settingsPath)) {
-    console.error('App settings file %s not found.', settingsPath);
-    return null;
+    const msg = `App settings file "${settingsPath}" not found.`;
+    console.error(msg);
+    throw new Error(msg);
   }
 
   try {
@@ -48,7 +49,7 @@ function loadAppSettings(): AppSettings {
     return settings;
   } catch (e) {
     console.error(e);
-    return null;
+    throw new Error(`Error parsing settings overrides: ${e}`);
   }
 }
 

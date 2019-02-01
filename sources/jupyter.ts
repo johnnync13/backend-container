@@ -23,14 +23,14 @@ import * as logging from './logging';
 
 interface JupyterServer {
   port: number;
-  childProcess?: childProcess.ChildProcess;
-  proxy?: httpProxy.ProxyServer;
+  childProcess: childProcess.ChildProcess;
+  proxy: httpProxy.ProxyServer;
 }
 
 /**
  * Jupyter servers key'd by user id (each server is associated with a single user)
  */
-let jupyterServer: JupyterServer = null;
+let jupyterServer: JupyterServer|null = null;
 
 /**
  * The application settings instance.
@@ -85,18 +85,19 @@ function pipeOutput(stream: NodeJS.ReadableStream) {
 }
 
 function createJupyterServer() {
-  const server: JupyterServer = {port: appSettings.nextJupyterPort};
-  logging.getLogger().info('Launching Jupyter server at %d', server.port);
+  const port = appSettings.nextJupyterPort;
+  logging.getLogger().info('Launching Jupyter server at %d', port);
 
   function exitHandler(code: number, signal: string): void {
-    logging.getLogger().error('Jupyter process %d exited due to signal: %s',
-                              server.childProcess.pid, signal);
+    logging.getLogger().error(
+        'Jupyter process %d exited due to signal: %s',
+        jupyterServer!.childProcess.pid, signal);
     jupyterServer = null;
   }
 
   const contentDir = path.join(appSettings.datalabRoot, appSettings.contentDir);
   const processArgs = ['notebook'].concat(appSettings.jupyterArgs).concat([
-    `--port=${server.port}`,
+    `--port=${port}`,
     `--FileContentsManager.root_dir="${appSettings.datalabRoot}/"`,
     `--MappingKernelManager.root_dir="${contentDir}"`,
   ]);
@@ -113,39 +114,32 @@ function createJupyterServer() {
   logging.getLogger().info(
       'Using jupyter server address %s', jupyterServerAddr);
 
-  const notebookEnv = process.env;
   const processOptions = {
     detached: false,
-    env: notebookEnv
+    env: process.env,
   };
 
-  server.childProcess = childProcess.spawn('jupyter', processArgs, processOptions);
-  server.childProcess.on('exit', exitHandler);
-  logging.getLogger().info('Jupyter process started with pid %d and args %j',
-                           server.childProcess.pid, processArgs);
+  const serverProcess =
+      childProcess.spawn('jupyter', processArgs, processOptions);
+  serverProcess.on('exit', exitHandler);
+  logging.getLogger().info(
+      'Jupyter process started with pid %d and args %j', serverProcess.pid,
+      processArgs);
 
   // Capture the output, so it can be piped for logging.
-  pipeOutput(server.childProcess.stdout);
-  pipeOutput(server.childProcess.stderr);
+  pipeOutput(serverProcess.stdout);
+  pipeOutput(serverProcess.stderr);
 
   // Create the proxy.
-  let proxyTargetHost = jupyterServerAddr;
-  let proxyTargetPort = server.port;
-  if (appSettings.kernelManagerProxyHost) {
-    proxyTargetHost = appSettings.kernelManagerProxyHost;
-  }
-  if (appSettings.kernelManagerProxyPort) {
-    proxyTargetPort = appSettings.kernelManagerProxyPort;
-  }
+  const proxyTargetHost =
+      appSettings.kernelManagerProxyHost || jupyterServerAddr;
+  const proxyTargetPort = appSettings.kernelManagerProxyPort || port;
 
-  const proxyOptions: httpProxy.ProxyServerOptions = {
-    target: `http://${proxyTargetHost}:${proxyTargetPort}`
-  };
+  const proxy = httpProxy.createProxyServer(
+      {target: `http://${proxyTargetHost}:${proxyTargetPort}`});
+  proxy.on('error', errorHandler);
 
-  server.proxy = httpProxy.createProxyServer(proxyOptions);
-  server.proxy.on('error', errorHandler);
-
-  jupyterServer = server;
+  jupyterServer = {port, proxy, childProcess: serverProcess};
 }
 
 /**
@@ -160,10 +154,12 @@ export function init(settings: AppSettings): void {
  * Closes the Jupyter server manager.
  */
 export function close(): void {
-  const jupyterProcess = jupyterServer.childProcess;
+  if (!jupyterServer) {
+    return;
+  }
 
   try {
-    jupyterProcess.kill('SIGHUP');
+    jupyterServer.childProcess.kill('SIGHUP');
   } catch (e) {
   }
 

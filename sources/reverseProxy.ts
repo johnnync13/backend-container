@@ -66,7 +66,7 @@ export function getRequestPort(request: http.ServerRequest, path: string): strin
 export function handleRequest(request: http.ServerRequest,
                               response: http.ServerResponse,
                               port: String) {
-  request.url = request.url.replace(regex, '');
+  request.url = request.url!.replace(regex, '');
   const target = 'http://localhost:' + port;
 
   proxy.web(request, response, {
