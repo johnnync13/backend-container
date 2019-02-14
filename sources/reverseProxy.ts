@@ -55,7 +55,7 @@ function headerAsString(header?: string | string[]): string {
  * the port as a string. Othewise, returns null.
  */
 export function getRequestPort(request: http.ServerRequest, path: string): string {
-  const referer: string = headerAsString(request.headers.referer);
+  const referer: string = headerAsString(request.headers['referer']);
   const port: string = getPort(path) || getPort(referer);
   return port;
 }
