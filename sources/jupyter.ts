@@ -167,7 +167,7 @@ export function close(): void {
 }
 
 /** Proxy this socket request to jupyter. */
-export function handleSocket(request: http.ServerRequest, socket: net.Socket, head: Buffer) {
+export function handleSocket(request: http.IncomingMessage, socket: net.Socket, head: Buffer) {
   if (!jupyterServer) {
     logging.getLogger().error('Jupyter server is not running.');
     return;
@@ -176,7 +176,7 @@ export function handleSocket(request: http.ServerRequest, socket: net.Socket, he
 }
 
 /** Proxy this HTTP request to jupyter. */
-export function handleRequest(request: http.ServerRequest, response: http.ServerResponse) {
+export function handleRequest(request: http.IncomingMessage, response: http.ServerResponse) {
   if (!jupyterServer) {
     response.statusCode = 500;
     response.end();
@@ -186,7 +186,7 @@ export function handleRequest(request: http.ServerRequest, response: http.Server
   jupyterServer.proxy.web(request, response, null);
 }
 
-function errorHandler(error: Error, request: http.ServerRequest, response: http.ServerResponse) {
+function errorHandler(error: Error, request: http.IncomingMessage, response: http.ServerResponse) {
   logging.getLogger().error(error, 'Jupyter server returned error.');
 
   response.writeHead(500, 'Internal Server Error');

@@ -50,7 +50,7 @@ export function getJupyterLogger(): bunyan.ILogger {
  * @param request the request to be logged.
  * @param response the response to be logged.
  */
-export function logRequest(request: http.ServerRequest, response: http.ServerResponse): void {
+export function logRequest(request: http.IncomingMessage, response: http.ServerResponse): void {
   requestLogger!.info(
       {url: request.url, method: request.method}, 'Received a new request');
   response.on('finish', () => {

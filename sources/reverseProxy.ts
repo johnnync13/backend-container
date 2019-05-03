@@ -21,7 +21,7 @@ let appSettings: AppSettings;
 const proxy: httpProxy.ProxyServer = httpProxy.createProxyServer(null);
 const regex = new RegExp('\/_proxy\/([0-9]+)($|\/)');
 
-function errorHandler(error: Error, request: http.ServerRequest, response: http.ServerResponse) {
+function errorHandler(error: Error, request: http.IncomingMessage, response: http.ServerResponse) {
   response.writeHead(500, 'Reverse Proxy Error.');
   response.end();
 }
@@ -54,7 +54,7 @@ function headerAsString(header?: string | string[]): string {
  * Get port from request. If the request should be handled by reverse proxy, returns
  * the port as a string. Othewise, returns null.
  */
-export function getRequestPort(request: http.ServerRequest, path: string): string {
+export function getRequestPort(request: http.IncomingMessage, path: string): string {
   const referer: string = headerAsString(request.headers['referer']);
   const port: string = getPort(path) || getPort(referer);
   return port;
@@ -63,7 +63,7 @@ export function getRequestPort(request: http.ServerRequest, path: string): strin
 /**
  * Handle request by sending it to the internal http endpoint.
  */
-export function handleRequest(request: http.ServerRequest,
+export function handleRequest(request: http.IncomingMessage,
                               response: http.ServerResponse,
                               port: String) {
   request.url = request.url!.replace(regex, '');

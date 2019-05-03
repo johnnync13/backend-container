@@ -30,7 +30,7 @@ let server: http.Server;
  * @param response the out-going HTTP response.
  * @path the parsed path in the request.
  */
-function handleRequest(request: http.ServerRequest,
+function handleRequest(request: http.IncomingMessage,
                        response: http.ServerResponse,
                        requestPath: string) {
 
@@ -60,7 +60,7 @@ function handleRequest(request: http.ServerRequest,
  * @param request the incoming HTTP request.
  * @param response the out-going HTTP response.
  */
-function uncheckedRequestHandler(request: http.ServerRequest, response: http.ServerResponse) {
+function uncheckedRequestHandler(request: http.IncomingMessage, response: http.ServerResponse) {
   const parsedUrl = url.parse(request.url || '', true);
   const urlpath = parsedUrl.pathname || '';
 
@@ -76,7 +76,7 @@ function uncheckedRequestHandler(request: http.ServerRequest, response: http.Ser
   }
 }
 
-function socketHandler(request: http.ServerRequest, socket: net.Socket, head: Buffer) {
+function socketHandler(request: http.IncomingMessage, socket: net.Socket, head: Buffer) {
   jupyter.handleSocket(request, socket, head);
 }
 
@@ -86,7 +86,7 @@ function socketHandler(request: http.ServerRequest, socket: net.Socket, head: Bu
  * @param request the incoming HTTP request.
  * @param response the out-going HTTP response.
  */
-function requestHandler(request: http.ServerRequest, response: http.ServerResponse) {
+function requestHandler(request: http.IncomingMessage, response: http.ServerResponse) {
   try {
     uncheckedRequestHandler(request, response);
   } catch (e) {
