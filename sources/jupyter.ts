@@ -89,6 +89,9 @@ function createJupyterServer() {
   logging.getLogger().info('Launching Jupyter server at %d', port);
 
   function exitHandler(code: number, signal: string): void {
+    if (!jupyterServer) {
+      return;
+    }
     logging.getLogger().error(
         'Jupyter process %d exited due to signal: %s',
         jupyterServer!.childProcess.pid, signal);
@@ -158,12 +161,9 @@ export function close(): void {
     return;
   }
 
-  try {
-    jupyterServer.childProcess.kill('SIGHUP');
-  } catch (e) {
-  }
-
-  jupyterServer = null;
+  const pid = jupyterServer!.childProcess.pid;
+  logging.getLogger().info(`jupyter close: PID: ${pid}`);
+  jupyterServer.childProcess.kill('SIGHUP');
 }
 
 /** Proxy this socket request to jupyter. */

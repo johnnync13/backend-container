@@ -69,7 +69,10 @@ if (appSettings != null) {
  * associated Jupyter server process.
  */
 function exit() {
+  logging.getLogger().info('app: exit');
   server.stop();
+  logging.getLogger().info('app: exit: stopped');
+  process.exit(0);
 }
 
 /**
@@ -85,3 +88,4 @@ function errorHandler(e: Error): void {
 process.on('uncaughtException', errorHandler);
 process.on('exit', exit);
 process.on('SIGINT', exit);
+process.on('SIGTERM', exit);
