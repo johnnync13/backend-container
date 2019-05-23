@@ -8,13 +8,12 @@ our [FAQ](https://research.google.com/colaboratory/faq.html).
 ## Contacting Us
 
 For support or help using Colab, please submit questions tagged with
-`google-colaboratory`
-on
+`google-colaboratory` on
 [StackOverflow](https://stackoverflow.com/questions/tagged/google-colaboratory).
 
-For any product issues, you can
-either [submit an issue](https://github.com/googlecolab/colabtools/issues) or
-"Help" -> "Send Feedback" in Colab.
+For any product issues, you can either
+[submit an issue](https://github.com/googlecolab/colabtools/issues) or "Help" ->
+"Send Feedback" in Colab.
 
 ## Contributing
 
