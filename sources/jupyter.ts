@@ -28,9 +28,15 @@ interface JupyterServer {
 }
 
 /**
- * Jupyter servers key'd by user id (each server is associated with a single user)
+ * Singleton tracking the jupyter server instance we manage.
  */
 let jupyterServer: JupyterServer|null = null;
+
+/**
+ * The maximum number of times we'll restart jupyter; we set a limit to avoid
+ * users being stuck with a slow-crash-looping server.
+ */
+let remainingJupyterServerRestarts: number = 20;
 
 /**
  * The application settings instance.
@@ -85,17 +91,26 @@ function pipeOutput(stream: NodeJS.ReadableStream) {
 }
 
 function createJupyterServer() {
+  if (!remainingJupyterServerRestarts) {
+    logging.getLogger().error('No jupyter restart attempts remaining.');
+    return;
+  }
+  remainingJupyterServerRestarts -= 1;
   const port = appSettings.nextJupyterPort;
   logging.getLogger().info('Launching Jupyter server at %d', port);
 
   function exitHandler(code: number, signal: string): void {
-    if (!jupyterServer) {
-      return;
+    if (jupyterServer) {
+      logging.getLogger().error(
+          'Jupyter process %d exited due to signal: %s',
+          jupyterServer.childProcess.pid, signal);
+    } else {
+      logging.getLogger().error(
+        'Jupyter process exit before server creation finished due to signal: %s',
+        signal);
     }
-    logging.getLogger().error(
-        'Jupyter process %d exited due to signal: %s',
-        jupyterServer!.childProcess.pid, signal);
-    jupyterServer = null;
+    // We want to restart jupyter whenever it terminates.
+    createJupyterServer();
   }
 
   const contentDir = path.join(appSettings.datalabRoot, appSettings.contentDir);
