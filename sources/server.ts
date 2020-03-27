@@ -66,11 +66,13 @@ function uncheckedRequestHandler(request: http.IncomingMessage, response: http.S
 
   logging.logRequest(request, response);
 
-  const reverseProxyPort: string = reverseProxy.getRequestPort(request, urlpath);
+  const proxyPort = reverseProxy.getRequestPort(urlpath);
   if (sockets.isSocketIoPath(urlpath)) {
     // Will automatically be handled by socket.io.
-  } else if (reverseProxyPort) {
-    reverseProxy.handleRequest(request, response, reverseProxyPort);
+  } else if (proxyPort && proxyPort !== request.socket.localPort) {
+    // Do not allow proxying to this same port, as that can be used to mask the
+    // target path.
+    reverseProxy.handleRequest(request, response, proxyPort);
   } else {
     handleRequest(request, response, urlpath);
   }

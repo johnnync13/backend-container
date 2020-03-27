@@ -26,46 +26,26 @@ function errorHandler(error: Error, request: http.IncomingMessage, response: htt
   response.end();
 }
 
-function getPort(url: string) {
-  if (url) {
-    var sr: any = regex.exec(url);
-    if (sr) {
-      return sr[1];
+/**
+ * Get port from request. If the request should be handled by reverse proxy,
+ * returns the port. Otherwise, returns 0.
+ */
+export function getRequestPort(path: string): number {
+  if (path) {
+    const match = regex.exec(path);
+    if (match) {
+      return Number(match[1]);
     }
   }
-  return null;
-}
-
-/**
- * Normalize a header value to a string, turning null to the empty string and
- * joining multiple values as needed.
- */
-function headerAsString(header?: string | string[]): string {
-    if (!header) {
-        return '';
-    } else if (typeof header === 'string') {
-      return header;
-    } else {
-      return header.join();
-    }
-}
-
-/**
- * Get port from request. If the request should be handled by reverse proxy, returns
- * the port as a string. Othewise, returns null.
- */
-export function getRequestPort(request: http.IncomingMessage, path: string): string {
-  const referer: string = headerAsString(request.headers['referer']);
-  const port: string = getPort(path) || getPort(referer);
-  return port;
+  return 0;
 }
 
 /**
  * Handle request by sending it to the internal http endpoint.
  */
-export function handleRequest(request: http.IncomingMessage,
-                              response: http.ServerResponse,
-                              port: String) {
+export function handleRequest(
+    request: http.IncomingMessage, response: http.ServerResponse,
+    port: number) {
   request.url = request.url!.replace(regex, '');
   const target = 'http://localhost:' + port;
 
