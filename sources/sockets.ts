@@ -159,15 +159,22 @@ function socketHandler(socket: SocketIO.Socket) {
   socket.on('data', (message: DataMessage) => {
     // The client sends this message per data message to a particular channel. Propagate the
     // message over to the WebSocket associated with the specified channel.
-
-    logging.getLogger().debug('Send data in session %d\n%s',
-                              session.id, message.data);
     if (session.webSocket) {
-      session.webSocket.send(message.data, (e) => {
-        if (e) {
-          logging.getLogger().error(e, 'Failed to send message to websocket');
-        }
-      });
+      if (message instanceof Buffer) {
+        logging.getLogger().debug('Send binary data of length %d in session %d.', message.length, session.id);
+        session.webSocket.send(message, (e) => {
+          if (e) {
+            logging.getLogger().error(e, 'Failed to send message to websocket');
+          }
+        });
+      } else {
+        logging.getLogger().debug('Send data in session %d\n%s', session.id, message.data);
+        session.webSocket.send(message.data, (e) => {
+          if (e) {
+            logging.getLogger().error(e, 'Failed to send message to websocket');
+          }
+        });
+      }
     }
     else {
       logging.getLogger().error('Unable to send message; WebSocket is not open');
