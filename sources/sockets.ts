@@ -69,8 +69,13 @@ function createWebSocket(socketHost: string, port: number, session: Session): We
       .on('message',
           (data) => {
             // Propagate messages arriving on the WebSocket to the client.
-            logging.getLogger().debug(
+            if (data instanceof Buffer) {
+              logging.getLogger().debug(
+                  'WebSocket [%d] binary message length %d', session.id, data.length);
+            } else {
+              logging.getLogger().debug(
                 'WebSocket [%d] message\n%j', session.id, data);
+            }
             session.socket.emit('data', {data});
           })
       // tslint:disable-next-line:no-any TODO(b/109975537): get better type info
