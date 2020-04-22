@@ -126,8 +126,9 @@ function socketHandler(socket: SocketIO.Socket) {
 
   logging.getLogger().debug('Socket connected for session %d', session.id);
 
-  socket.on('disconnect', () => {
-    logging.getLogger().debug('Socket disconnected for session %d', session.id);
+  socket.on('disconnect', (reason) => {
+    logging.getLogger().debug('Socket disconnected for session %d reason: %s',
+                              session.id, reason);
 
     // Handle client disconnects to close WebSockets, so as to free up resources
     closeWebSocket(session);
