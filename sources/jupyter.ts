@@ -117,6 +117,7 @@ function createJupyterServer() {
   const processArgs = ['notebook'].concat(appSettings.jupyterArgs).concat([
     `--port=${port}`,
     `--FileContentsManager.root_dir="${appSettings.datalabRoot}/"`,
+    `--LargeFileManager.delete_to_trash=False`,
     `--MappingKernelManager.root_dir="${contentDir}"`,
   ]);
 
