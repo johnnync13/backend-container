@@ -12,12 +12,6 @@
     "node": "6.x"
   },
   "scripts": {
-    "transpile": "./node_modules/typescript/bin/tsc --module commonjs --noImplicitAny --target es6 *.ts externs/*.ts",
     "start": "node app.js"
-  },
-  "devDependencies": {
-    "@types/node": "^8.10.23",
-    "@types/socket.io": "^1.4.36",
-    "typescript": "2.6.2"
   }
 }
