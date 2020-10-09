@@ -35,16 +35,14 @@ function loadAppSettings(): AppSettings {
   }
 
   try {
-    const settings =
+    let settings =
         JSON.parse(fs.readFileSync(settingsPath, 'utf8') || '{}') as
         AppSettings;
     const settingsOverrides = process.env['DATALAB_SETTINGS_OVERRIDES'];
     if (settingsOverrides) {
       // Allow overriding individual settings via JSON provided as an environment variable.
-      const overrides = JSON.parse(settingsOverrides);
-      for (const key of Object.keys(overrides)) {
-        (settings as any)[key] = overrides[key];
-      }
+      const overrides = JSON.parse(settingsOverrides) as AppSettings;
+      settings = Object.assign(settings, overrides);
     }
     return settings;
   } catch (e) {
