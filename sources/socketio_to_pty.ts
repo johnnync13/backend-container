@@ -1,0 +1,99 @@
+/*
+ * Copyright 2020 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
+import * as http from 'http';
+import * as logging from './logging';
+import * as socketio from 'socket.io';
+import * as nodePty from 'node-pty';
+
+interface DataMessage {
+  channel: string;
+  data: string;
+}
+
+let sessionCounter = 0;
+
+/** Socket.io<->terminal adapter. */
+class Session {
+  private readonly id: number;
+  private readonly pty: nodePty.IPty;
+
+  constructor(private readonly socket: SocketIO.Socket) {
+    this.id = sessionCounter++;
+
+    this.socket.on('disconnect', () => {
+      logging.getLogger().debug('Socket disconnected for session %d', this.id);
+
+      // Handle client disconnects to close sockets, so as to free up resources.
+      this.close();
+    });
+
+    this.socket.on('data', (message: DataMessage) => {
+      // The client sends this message per data message to a particular channel.
+      // Propagate the message over to the Socket associated with the
+      // specified channel.
+
+      logging.getLogger().debug('Send data in session %d\n%s', this.id,
+          message.data);
+      this.pty.write(message.data);
+    });
+
+    this.pty = nodePty.spawn('bash', [], {
+      name: "xterm-color",
+      // cwd: process.env.HOME, // Which path should terminal start
+      // Pass environment variables
+      env: process.env as { [key: string]: string; },
+    });
+
+    this.pty.onData((data: string) => {
+      this.socket.emit('data', {data});
+    });
+
+    this.pty.onExit(({exitCode, signal}: {exitCode: number, signal?: number}) => {
+      this.socket.emit('exit', {exitCode, signal});
+    });
+  }
+
+  private close() {
+    this.socket.disconnect(true);
+    this.pty.kill();
+  }
+}
+
+/** SocketIO to node-pty adapter. */
+export class SocketIoToPty {
+  constructor(private readonly path: string, server: http.Server) {
+    const io = socketio(server, {
+      path: '/tty',
+      transports: ['polling'],
+      allowUpgrades: false,
+      // v2.10 changed default from 60s to 5s, prefer the longer timeout to
+      // avoid errant disconnects.
+      pingTimeout: 60000,
+    });
+
+    io.of('/').on('connection', (socket: SocketIO.Socket) => {
+      // Session manages its own lifetime.
+      // tslint:disable-next-line:no-unused-expression
+      new Session(socket);
+    });
+  }
+
+  /** Return true iff path is handled by socket.io. */
+  isPathProxied(path: string): boolean {
+    return path.indexOf(this.path + '/') === 0;
+  }
+}

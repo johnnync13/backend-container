@@ -57,4 +57,9 @@ export declare interface AppSettings {
    * An empty value uses localhost.
    */
   kernelManagerProxyHost: string;
+
+  /**
+   * True if terminal support should be enabled.
+   */
+  terminal: boolean;
 }

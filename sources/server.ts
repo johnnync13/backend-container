@@ -21,6 +21,7 @@ import * as jupyter from './jupyter';
 import * as logging from './logging';
 import * as reverseProxy from './reverseProxy';
 import * as sockets from './sockets';
+import {SocketIoToPty} from './socketio_to_pty';
 
 let server: http.Server;
 
@@ -66,6 +67,13 @@ function uncheckedRequestHandler(request: http.IncomingMessage, response: http.S
 
   logging.logRequest(request, response);
 
+  for (const handler of socketIoHandlers) {
+    if (handler.isPathProxied(urlpath)) {
+      // Will automatically be handled by socket.io.
+      return;
+    }
+  }
+
   const proxyPort = reverseProxy.getRequestPort(urlpath);
   if (sockets.isSocketIoPath(urlpath)) {
     // Will automatically be handled by socket.io.
@@ -97,6 +105,8 @@ function requestHandler(request: http.IncomingMessage, response: http.ServerResp
   }
 }
 
+const socketIoHandlers: SocketIoToPty[] = [];
+
 /**
  * Runs the proxy web server.
  * @param settings the configuration settings to use.
@@ -112,6 +122,10 @@ export function run(settings: AppSettings): void {
   server.on('upgrade', socketHandler);
 
   sockets.init(server, settings);
+
+  if (settings.terminal) {
+    socketIoHandlers.push(new SocketIoToPty('/tty', server));
+  }
 
   logging.getLogger().info('Starting server at http://localhost:%d',
                            settings.serverPort);

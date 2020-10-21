@@ -13,7 +13,6 @@
  */
 
 import * as http from 'http';
-import * as path_ from 'path';
 import * as socketio from 'socket.io';
 import * as url from 'url';
 import * as WebSocket from 'ws';
@@ -200,8 +199,7 @@ export function init(server: http.Server, settings: AppSettings): void {
     pingTimeout: 60000,
   });
 
-  io.of('/session')
-    .on('connection', socketHandler);
+  io.of('/session').on('connection', socketHandler);
 }
 
 /** Return true iff path is handled by socket.io. */
