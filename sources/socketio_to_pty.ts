@@ -41,14 +41,20 @@ class Session {
       this.close();
     });
 
-    this.socket.on('data', (message: DataMessage) => {
+    this.socket.on('data', (event: DataMessage) => {
       // The client sends this message per data message to a particular channel.
       // Propagate the message over to the Socket associated with the
       // specified channel.
 
       logging.getLogger().debug('Send data in session %d\n%s', this.id,
-          message.data);
-      this.pty.write(message.data);
+      event.data);
+      const message = JSON.parse(event.data) as PtyMessage;
+      if (message.data) {
+        this.pty.write(message.data);
+      }
+      if (message.cols && message.rows) {
+        this.pty.resize(message.cols, message.rows);
+      }
     });
 
     this.pty = nodePty.spawn('bash', [], {
@@ -96,4 +102,10 @@ export class SocketIoToPty {
   isPathProxied(path: string): boolean {
     return path.indexOf(this.path + '/') === 0;
   }
+}
+
+declare interface PtyMessage {
+  readonly data?: string;
+  readonly cols?: number;
+  readonly rows?: number;
 }
