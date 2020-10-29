@@ -59,7 +59,7 @@ class Session {
 
     this.pty = nodePty.spawn('bash', [], {
       name: "xterm-color",
-      // cwd: process.env.HOME, // Which path should terminal start
+      cwd: './content', // Which path should terminal start
       // Pass environment variables
       env: process.env as { [key: string]: string; },
     });
