@@ -24,12 +24,24 @@ interface DataMessage {
   data: string;
 }
 
+// Pause and resume are missing from the typings.
+interface Pty {
+  pause(): void;
+  resume(): void;
+}
+
 let sessionCounter = 0;
+
+// These are wild guesses, intended to allow some bursts of output before
+// the process gets blocked waiting on the terminal to update.
+const UNACKED_HIGH_WATER = 20;
+const UNACKED_LOW_WATER = 2;
 
 /** Socket.io<->terminal adapter. */
 class Session {
   private readonly id: number;
   private readonly pty: nodePty.IPty;
+  private unackedCount = 0;
 
   constructor(private readonly socket: SocketIO.Socket) {
     this.id = sessionCounter++;
@@ -65,7 +77,16 @@ class Session {
     });
 
     this.pty.onData((data: string) => {
-      this.socket.emit('data', {data});
+      ++this.unackedCount;
+      if (this.unackedCount > UNACKED_HIGH_WATER) {
+        (this.pty as unknown as Pty).pause();
+      }
+      this.socket.emit('data', {data, pause: true}, () => {
+        this.unackedCount = Math.max(0, --this.unackedCount);
+        if (this.unackedCount < UNACKED_LOW_WATER) {
+          (this.pty as unknown as Pty).resume();
+        }
+      });
     });
 
     this.pty.onExit(({exitCode, signal}: {exitCode: number, signal?: number}) => {
