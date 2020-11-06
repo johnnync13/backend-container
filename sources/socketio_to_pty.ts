@@ -43,7 +43,7 @@ class Session {
   private readonly pty: nodePty.IPty;
   private unackedCount = 0;
 
-  constructor(private readonly socket: SocketIO.Socket) {
+  constructor(private readonly socket: SocketIO.Socket, useBash: boolean) {
     this.id = sessionCounter++;
 
     this.socket.on('disconnect', () => {
@@ -69,7 +69,13 @@ class Session {
       }
     });
 
-    this.pty = nodePty.spawn('bash', [], {
+    let spawnProcess = 'tmux';
+    let processArgs = ['new-session', '-A', '-D', '-s', '0'];
+    if (useBash) {
+      spawnProcess = 'bash';
+      processArgs = [];
+    }
+    this.pty = nodePty.spawn(spawnProcess, processArgs, {
       name: "xterm-color",
       cwd: './content', // Which path should terminal start
       // Pass environment variables
@@ -102,7 +108,7 @@ class Session {
 
 /** SocketIO to node-pty adapter. */
 export class SocketIoToPty {
-  constructor(private readonly path: string, server: http.Server) {
+  constructor(private readonly path: string, server: http.Server, useBash: boolean) {
     const io = socketio(server, {
       path: '/tty',
       transports: ['polling'],
@@ -115,7 +121,7 @@ export class SocketIoToPty {
     io.of('/').on('connection', (socket: SocketIO.Socket) => {
       // Session manages its own lifetime.
       // tslint:disable-next-line:no-unused-expression
-      new Session(socket);
+      new Session(socket, useBash);
     });
   }
 

@@ -124,7 +124,7 @@ export function run(settings: AppSettings): void {
   sockets.init(server, settings);
 
   if (settings.terminal) {
-    socketIoHandlers.push(new SocketIoToPty('/tty', server));
+    socketIoHandlers.push(new SocketIoToPty('/tty', server, settings.useBash));
   }
 
   logging.getLogger().info('Starting server at http://localhost:%d',

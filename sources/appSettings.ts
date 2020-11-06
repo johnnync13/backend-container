@@ -62,4 +62,9 @@ export declare interface AppSettings {
    * True if terminal support should be enabled.
    */
   terminal: boolean;
+
+  /**
+   * True if the temrinal spawns bash instead of tmux.
+   */
+  useBash: boolean;
 }
