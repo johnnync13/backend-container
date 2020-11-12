@@ -97,6 +97,7 @@ class Session {
 
     this.pty.onExit(({exitCode, signal}: {exitCode: number, signal?: number}) => {
       this.socket.emit('exit', {exitCode, signal});
+      this.socket.disconnect(true);
     });
   }
 
